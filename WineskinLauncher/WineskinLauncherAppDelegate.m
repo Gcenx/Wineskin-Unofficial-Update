@@ -1051,7 +1051,15 @@
 			}
 			else if ([temp hasPrefix:@"Vendor:"])
 			{
-				[vendorID setString:[[[temp substringFromIndex:[temp rangeOfString:@"("].location+1] stringByReplacingOccurrencesOfString:@")" withString:@""] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]]];
+                if([temp containsString:@"("])
+                {
+                    [vendorID setString:[[[temp substringFromIndex:[temp rangeOfString:@"("].location+1] stringByReplacingOccurrencesOfString:@")" withString:@""] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]]];
+                } else
+                {
+                    // assume Intel GPU (since high Sierra no Vender ID reported
+                    [vendorID setString:@"0x8086"];
+                }
+                
 				++findCounter;
 			}
 			else if ([temp hasPrefix:@"VRAM (Total):"])
