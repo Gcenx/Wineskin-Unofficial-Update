@@ -1193,7 +1193,7 @@
     [mainFile setString:[NSString stringWithFormat:@"libXplugin.1.%d.%d.dylib",(int)majorVersion,(int)minorVersion]];
     if (![fm fileExistsAtPath:[NSString stringWithFormat:@"%@/%@",frameworksFold,mainFile]])
     {
-        [mainFile setString:@"/usr/lib/libXplugin.1.10.8.dylib"];//default to 10.8 for 10.9+
+        [mainFile setString:@"libXplugin.1.10.8.dylib"];//default to 10.8 for 10.9+
     }
     [fm removeItemAtPath:symlinkName error:nil];
     [fm createSymbolicLinkAtPath:symlinkName withDestinationPath:mainFile error:nil];
