@@ -1309,7 +1309,8 @@ NSFileManager *fm;
 - (IBAction)modifyMappingsButtonPressed:(id)sender
 {
 	NSDictionary* plistDictionary = [[NSDictionary alloc] initWithContentsOfFile:[NSString stringWithFormat:@"%@/Contents/Info.plist",[[[NSBundle mainBundle] bundlePath] stringByDeletingLastPathComponent]]];
-	[modifyMappingsMyDocumentsTextField setStringValue:[plistDictionary valueForKey:@"Symlink My Documents"]];
+    [modifyMappingsMyDocumentsTextField setStringValue:[plistDictionary valueForKey:@"Symlink My Documents"]];
+    [modifyMappingsDownloadsTextField setStringValue:[plistDictionary valueForKey:@"Symlink Downloads"]];
 	[modifyMappingsDesktopTextField setStringValue:[plistDictionary valueForKey:@"Symlink Desktop"]];
 	[modifyMappingsMyVideosTextField setStringValue:[plistDictionary valueForKey:@"Symlink My Videos"]];
 	[modifyMappingsMyMusicTextField setStringValue:[plistDictionary valueForKey:@"Symlink My Music"]];
@@ -2638,7 +2639,8 @@ NSFileManager *fm;
 - (IBAction)modifyMappingsSaveButtonPressed:(id)sender
 {
 	NSMutableDictionary* plistDictionary = [[NSMutableDictionary alloc] initWithContentsOfFile:[NSString stringWithFormat:@"%@/Contents/Info.plist",[[[NSBundle mainBundle] bundlePath] stringByDeletingLastPathComponent]]];
-	[plistDictionary setValue:[modifyMappingsMyDocumentsTextField stringValue] forKey:@"Symlink My Documents"];
+    [plistDictionary setValue:[modifyMappingsMyDocumentsTextField stringValue] forKey:@"Symlink My Documents"];
+    [plistDictionary setValue:[modifyMappingsDownloadsTextField stringValue] forKey:@"Symlink Downloads"];
 	[plistDictionary setValue:[modifyMappingsDesktopTextField stringValue] forKey:@"Symlink Desktop"];
 	[plistDictionary setValue:[modifyMappingsMyVideosTextField stringValue] forKey:@"Symlink My Videos"];
 	[plistDictionary setValue:[modifyMappingsMyMusicTextField stringValue] forKey:@"Symlink My Music"];
@@ -2657,7 +2659,8 @@ NSFileManager *fm;
 
 - (IBAction)modifyMappingsResetButtonPressed:(id)sender
 {
-	[modifyMappingsMyDocumentsTextField setStringValue:@"$HOME/Documents"];
+    [modifyMappingsMyDocumentsTextField setStringValue:@"$HOME/Documents"];
+    [modifyMappingsDownloadsTextField setStringValue:@"$HOME/Downloads"];
 	[modifyMappingsDesktopTextField setStringValue:@"$HOME/Desktop"];
 	[modifyMappingsMyVideosTextField setStringValue:@"$HOME/Movies"];
 	[modifyMappingsMyMusicTextField setStringValue:@"$HOME/Music"];
@@ -2666,17 +2669,32 @@ NSFileManager *fm;
 
 - (IBAction)modifyMappingsMyDocumentsBrowseButtonPressed:(id)sender
 {
-	NSOpenPanel *panel = [[NSOpenPanel alloc] init];
-	[panel setTitle:@"Please choose the Folder \"My Documents\" should map to"];
-	[panel setPrompt:@"Choose"];
-	[panel setCanChooseDirectories:YES];
-	[panel setCanChooseFiles:NO];
-	[panel setAllowsMultipleSelection:NO];
-	[panel setTreatsFilePackagesAsDirectories:YES];
-	[panel setShowsHiddenFiles:YES];
-	if ([panel runModalForDirectory:@"/" file:nil types:nil] != 0)
-		[modifyMappingsMyDocumentsTextField setStringValue:[[[panel filenames] objectAtIndex:0] stringByReplacingOccurrencesOfString:NSHomeDirectory() withString:@"$HOME"]];
-	[panel release];
+    NSOpenPanel *panel = [[NSOpenPanel alloc] init];
+    [panel setTitle:@"Please choose the Folder \"My Documents\" should map to"];
+    [panel setPrompt:@"Choose"];
+    [panel setCanChooseDirectories:YES];
+    [panel setCanChooseFiles:NO];
+    [panel setAllowsMultipleSelection:NO];
+    [panel setTreatsFilePackagesAsDirectories:YES];
+    [panel setShowsHiddenFiles:YES];
+    if ([panel runModalForDirectory:@"/" file:nil types:nil] != 0)
+        [modifyMappingsMyDocumentsTextField setStringValue:[[[panel filenames] objectAtIndex:0] stringByReplacingOccurrencesOfString:NSHomeDirectory() withString:@"$HOME"]];
+    [panel release];
+}
+
+- (IBAction)modifyMappingsDownloadsBrowseButtonPressed:(id)sender
+{
+    NSOpenPanel *panel = [[NSOpenPanel alloc] init];
+    [panel setTitle:@"Please choose the Folder \"Downloads\" should map to"];
+    [panel setPrompt:@"Choose"];
+    [panel setCanChooseDirectories:YES];
+    [panel setCanChooseFiles:NO];
+    [panel setAllowsMultipleSelection:NO];
+    [panel setTreatsFilePackagesAsDirectories:YES];
+    [panel setShowsHiddenFiles:YES];
+    if ([panel runModalForDirectory:@"/" file:nil types:nil] != 0)
+        [modifyMappingsDownloadsTextField setStringValue:[[[panel filenames] objectAtIndex:0] stringByReplacingOccurrencesOfString:NSHomeDirectory() withString:@"$HOME"]];
+    [panel release];
 }
 
 - (IBAction)modifyMappingsMyDesktopBrowseButtonPressed:(id)sender

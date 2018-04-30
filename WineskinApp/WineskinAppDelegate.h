@@ -174,7 +174,8 @@
 	
 	//Modify Mappings Window
 	IBOutlet NSWindow *modifyMappingsWindow;
-	IBOutlet NSTextField *modifyMappingsMyDocumentsTextField;
+    IBOutlet NSTextField *modifyMappingsMyDocumentsTextField;
+    IBOutlet NSTextField *modifyMappingsDownloadsTextField;
 	IBOutlet NSTextField *modifyMappingsDesktopTextField;
 	IBOutlet NSTextField *modifyMappingsMyVideosTextField;
 	IBOutlet NSTextField *modifyMappingsMyMusicTextField;
@@ -318,6 +319,7 @@
 - (IBAction)modifyMappingsCancelButtonPressed:(id)sender;
 - (IBAction)modifyMappingsResetButtonPressed:(id)sender;
 - (IBAction)modifyMappingsMyDocumentsBrowseButtonPressed:(id)sender;
+- (IBAction)modifyMappingsDownloadsBrowseButtonPressed:(id)sender;
 - (IBAction)modifyMappingsMyDesktopBrowseButtonPressed:(id)sender;
 - (IBAction)modifyMappingsMyVideosBrowseButtonPressed:(id)sender;
 - (IBAction)modifyMappingsMyMusicBrowseButtonPressed:(id)sender;
