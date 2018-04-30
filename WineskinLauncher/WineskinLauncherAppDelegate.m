@@ -865,16 +865,27 @@
 {
 	//get symlink locations
 	NSDictionary *plistDictionary = [[NSDictionary alloc] initWithContentsOfFile:infoPlistFile];
-	NSMutableString *symlinkMyDocuments = [[[NSMutableString alloc] init] autorelease];
+    
+    NSMutableString *symlinkMyDocuments = [[[NSMutableString alloc] init] autorelease];
     [symlinkMyDocuments setString:[[plistDictionary valueForKey:@"Symlink My Documents"] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]]];
-	[symlinkMyDocuments replaceOccurrencesOfString:@"$HOME" withString:NSHomeDirectory() options:NSLiteralSearch range:NSMakeRange(0, [symlinkMyDocuments length])];
-	[fm createDirectoryAtPath:symlinkMyDocuments withIntermediateDirectories:YES attributes:nil error:nil];
-	if (![fm fileExistsAtPath:symlinkMyDocuments] && [symlinkMyDocuments length] > 0)
-	{
-		NSString *tempOld = [NSString stringWithFormat:@"%@",symlinkMyDocuments];
-		[symlinkMyDocuments setString:[NSString stringWithFormat:@"%@/Documents",NSHomeDirectory()]];
-		NSLog(@"ERROR: \"%@\" requested to be linked to \"My Documents\", but folder does not exist and could not be created.  Using \"%@\" instead.",tempOld,symlinkMyDocuments);
-	}
+    [symlinkMyDocuments replaceOccurrencesOfString:@"$HOME" withString:NSHomeDirectory() options:NSLiteralSearch range:NSMakeRange(0, [symlinkMyDocuments length])];
+    [fm createDirectoryAtPath:symlinkMyDocuments withIntermediateDirectories:YES attributes:nil error:nil];
+    if (![fm fileExistsAtPath:symlinkMyDocuments] && [symlinkMyDocuments length] > 0)
+    {
+        NSString *tempOld = [NSString stringWithFormat:@"%@",symlinkMyDocuments];
+        [symlinkMyDocuments setString:[NSString stringWithFormat:@"%@/Documents",NSHomeDirectory()]];
+        NSLog(@"ERROR: \"%@\" requested to be linked to \"My Documents\", but folder does not exist and could not be created.  Using \"%@\" instead.",tempOld,symlinkMyDocuments);
+    }
+    NSMutableString *symlinkDownloads = [[[NSMutableString alloc] init] autorelease];
+    [symlinkDownloads setString:[[plistDictionary valueForKey:@"Symlink Downloads"] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]]];
+    [symlinkDownloads replaceOccurrencesOfString:@"$HOME" withString:NSHomeDirectory() options:NSLiteralSearch range:NSMakeRange(0, [symlinkDownloads length])];
+    [fm createDirectoryAtPath:symlinkDownloads withIntermediateDirectories:YES attributes:nil error:nil];
+    if (![fm fileExistsAtPath:symlinkDownloads] && [symlinkDownloads length] > 0)
+    {
+        NSString *tempOld = [NSString stringWithFormat:@"%@",symlinkDownloads];
+        [symlinkDownloads setString:[NSString stringWithFormat:@"%@/Downloads",NSHomeDirectory()]];
+        NSLog(@"ERROR: \"%@\" requested to be linked to \"Downloads\", but folder does not exist and could not be created.  Using \"%@\" instead.",tempOld,symlinkDownloads);
+    }
     NSMutableString *symlinkDesktop = [[[NSMutableString alloc] init] autorelease];
 	[symlinkDesktop setString:[[plistDictionary valueForKey:@"Symlink Desktop"] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]]];
     [symlinkDesktop replaceOccurrencesOfString:@"$HOME" withString:NSHomeDirectory() options:NSLiteralSearch range:NSMakeRange(0, [symlinkDesktop length])];
@@ -918,15 +929,25 @@
 	//set the symlinks
 	if ([fm fileExistsAtPath:[NSString stringWithFormat:@"%@/drive_c/users/Wineskin",winePrefix]])
 	{
-		if (doSymlinks && ([symlinkMyDocuments length] > 0))
-		{
-			[fm removeItemAtPath:[NSString stringWithFormat:@"%@/drive_c/users/Wineskin/My Documents",winePrefix] error:nil];
-			[fm createSymbolicLinkAtPath:[NSString stringWithFormat:@"%@/drive_c/users/Wineskin/My Documents",winePrefix] withDestinationPath:symlinkMyDocuments error:nil];
-			[self systemCommand:[NSString stringWithFormat:@"chmod -h 777 \"%@/drive_c/users/Wineskin/My Documents\"",winePrefix]];
-		}
-		else
+        if (doSymlinks && ([symlinkMyDocuments length] > 0))
         {
-			[fm createDirectoryAtPath:[NSString stringWithFormat:@"%@/drive_c/users/Wineskin/My Documents",winePrefix] withIntermediateDirectories:NO attributes:nil error:nil];
+            [fm removeItemAtPath:[NSString stringWithFormat:@"%@/drive_c/users/Wineskin/My Documents",winePrefix] error:nil];
+            [fm createSymbolicLinkAtPath:[NSString stringWithFormat:@"%@/drive_c/users/Wineskin/My Documents",winePrefix] withDestinationPath:symlinkMyDocuments error:nil];
+            [self systemCommand:[NSString stringWithFormat:@"chmod -h 777 \"%@/drive_c/users/Wineskin/My Documents\"",winePrefix]];
+        }
+        else
+        {
+            [fm createDirectoryAtPath:[NSString stringWithFormat:@"%@/drive_c/users/Wineskin/My Documents",winePrefix] withIntermediateDirectories:NO attributes:nil error:nil];
+        }
+        if (doSymlinks && ([symlinkDownloads length] > 0))
+        {
+            [fm removeItemAtPath:[NSString stringWithFormat:@"%@/drive_c/users/Wineskin/Downloads",winePrefix] error:nil];
+            [fm createSymbolicLinkAtPath:[NSString stringWithFormat:@"%@/drive_c/users/Wineskin/Downloads",winePrefix] withDestinationPath:symlinkDownloads error:nil];
+            [self systemCommand:[NSString stringWithFormat:@"chmod -h 777 \"%@/drive_c/users/Wineskin/Downloads\"",winePrefix]];
+        }
+        else
+        {
+            [fm createDirectoryAtPath:[NSString stringWithFormat:@"%@/drive_c/users/Wineskin/Downloads",winePrefix] withIntermediateDirectories:NO attributes:nil error:nil];
         }
 		if (doSymlinks && ([symlinkDesktop length] > 0))
 		{
@@ -2422,9 +2443,13 @@
         }
     }
 	//fix user folders back
-	if ([[[fm attributesOfItemAtPath:[NSString stringWithFormat:@"%@/drive_c/users/Wineskin/My Documents",winePrefix] error:nil] fileType] isEqualToString:@"NSFileTypeSymbolicLink"])
+    if ([[[fm attributesOfItemAtPath:[NSString stringWithFormat:@"%@/drive_c/users/Wineskin/My Documents",winePrefix] error:nil] fileType] isEqualToString:@"NSFileTypeSymbolicLink"])
     {
-		[fm removeItemAtPath:[NSString stringWithFormat:@"%@/drive_c/users/Wineskin/My Documents",winePrefix] error:nil];
+        [fm removeItemAtPath:[NSString stringWithFormat:@"%@/drive_c/users/Wineskin/My Documents",winePrefix] error:nil];
+    }
+    if ([[[fm attributesOfItemAtPath:[NSString stringWithFormat:@"%@/drive_c/users/Wineskin/Downloads",winePrefix] error:nil] fileType] isEqualToString:@"NSFileTypeSymbolicLink"])
+    {
+        [fm removeItemAtPath:[NSString stringWithFormat:@"%@/drive_c/users/Wineskin/Downloads",winePrefix] error:nil];
     }
 	if ([[[fm attributesOfItemAtPath:[NSString stringWithFormat:@"%@/drive_c/users/Wineskin/Desktop",winePrefix] error:nil] fileType] isEqualToString:@"NSFileTypeSymbolicLink"])
     {
