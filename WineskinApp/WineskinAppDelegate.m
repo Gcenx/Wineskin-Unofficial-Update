@@ -895,13 +895,28 @@ NSFileManager *fm;
 {
     //get name of wine and wineserver
     NSString *wineName = @"wine";
+    NSString *wine64Name = @"wine64";
+    NSString *wineStagingName = @"wine-preloader";
+    NSString *wineStaging64Name = @"wine64-preloader";
     NSString *wineserverName = @"wineserver";
     NSArray *filesTEMP1 = [fm subpathsOfDirectoryAtPath:[NSString stringWithFormat:@"%@/Contents/Frameworks/wswine.bundle/bin",[[[NSBundle mainBundle] bundlePath] stringByDeletingLastPathComponent]] error:nil];
     for (NSString *item in filesTEMP1)
     {
-		if ([item hasSuffix:@"Wine"])
+        if ([item hasSuffix:@"Wine"])
         {
             wineName = [NSString stringWithFormat:@"%@",item];
+        }
+        if ([item hasSuffix:@"Wine64"])
+        {
+            wine64Name = [NSString stringWithFormat:@"%@",item];
+        }
+        if ([item hasSuffix:@"Wine-preloader"])
+        {
+            wineStagingName = [NSString stringWithFormat:@"%@",item];
+        }
+        if ([item hasSuffix:@"Wine64-preloader"])
+        {
+            wineStaging64Name = [NSString stringWithFormat:@"%@",item];
         }
         else if ([item hasSuffix:@"Wineserver"])
         {
@@ -919,6 +934,9 @@ NSFileManager *fm;
 	{
 		//kill WineskinLauncher WineskinX11 wine wineserver
         [self systemCommand:[NSString stringWithFormat:@"killall -9 %@",wineName]];
+        [self systemCommand:[NSString stringWithFormat:@"killall -9 %@",wine64Name]];
+        [self systemCommand:[NSString stringWithFormat:@"killall -9 %@",wineStagingName]];
+        [self systemCommand:[NSString stringWithFormat:@"killall -9 %@",wineStaging64Name]];
         [self systemCommand:[NSString stringWithFormat:@"killall -9 %@",wineserverName]];
         NSMutableArray *pidsToKill = [[NSMutableArray alloc] initWithCapacity:5];
         [pidsToKill addObjectsFromArray:[[self systemCommand:[NSString stringWithFormat:@"ps ax | grep \"%@\" | grep WineskinX11 | awk \"{print \\$1}\"",[[[NSBundle mainBundle] bundlePath] stringByDeletingLastPathComponent]]] componentsSeparatedByString:@"\n"]];
