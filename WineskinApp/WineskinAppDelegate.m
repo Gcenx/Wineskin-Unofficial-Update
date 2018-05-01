@@ -893,11 +893,96 @@ NSFileManager *fm;
 }
 - (IBAction)killWineskinProcessesButtonPressed:(id)sender
 {
+    NSString *contFold = [NSString stringWithFormat:@"%@/Contents",[[[NSBundle mainBundle] bundlePath] stringByDeletingLastPathComponent]];
+    NSString *pathToWineBinFolder = [NSString stringWithFormat:@"%@/Frameworks/wswine.bundle/bin",contFold];
+    if     ([fm fileExistsAtPath:[NSString stringWithFormat:@"%@/wine64-preloader",pathToWineBinFolder]])
+    {
+        [self killWineStaging64];
+    }
+    else if     ([fm fileExistsAtPath:[NSString stringWithFormat:@"%@/wine64",pathToWineBinFolder]])
+    {
+        [self killWine64];
+         }
+         else if     ([fm fileExistsAtPath:[NSString stringWithFormat:@"%@/wine-preloader",pathToWineBinFolder]])
+         {
+             [self killWineStaging];
+         }
+         else
+         {
+             [self killWine32];
+         }
+}
+
+- (void)killWine32
+{
+    //get name of wine and wineserver
+    NSString *wineName = @"wine";
+    NSString *wineserverName = @"wineserver";
+    NSArray *filesTEMP1 = [fm subpathsOfDirectoryAtPath:[NSString stringWithFormat:@"%@/Contents/Frameworks/wswine.bundle/bin",[[[NSBundle mainBundle] bundlePath] stringByDeletingLastPathComponent]] error:nil];
+    for (NSString *item in filesTEMP1)
+    {
+        if ([item hasSuffix:@"Wine"])
+        {
+            wineName = [NSString stringWithFormat:@"%@",item];
+        }
+        else if ([item hasSuffix:@"Wineserver"])
+        {
+            wineserverName = [NSString stringWithFormat:@"%@",item];
+        }
+    }
+    //give warning message
+    NSAlert *alert = [[NSAlert alloc] init];
+    [alert addButtonWithTitle:@"Yes"];
+    [alert addButtonWithTitle:@"No"];
+    [alert setMessageText:@"Kill Processes, Are you Sure?"];
+    [alert setInformativeText:[NSString stringWithFormat:@"This will kill the following processes (if running) from this wrapper...\n\nWineskinLauncher\nWineskinX11\n%@\n%@",wineName,wineserverName]];
+    [alert setAlertStyle:NSInformationalAlertStyle];
+    if ([alert runModal] == NSAlertFirstButtonReturn)
+    {
+        //kill WineskinLauncher WineskinX11 wine wineserver
+        [self systemCommand:[NSString stringWithFormat:@"killall -m %@",wineName]];
+        [self systemCommand:[NSString stringWithFormat:@"killall -m %@",wineserverName]];
+        NSMutableArray *pidsToKill = [[NSMutableArray alloc] initWithCapacity:5];
+        [pidsToKill addObjectsFromArray:[[self systemCommand:[NSString stringWithFormat:@"ps ax | grep \"%@\" | grep WineskinX11 | awk \"{print \\$1}\"",[[[NSBundle mainBundle] bundlePath] stringByDeletingLastPathComponent]]] componentsSeparatedByString:@"\n"]];
+        [pidsToKill addObjectsFromArray:[[self systemCommand:[NSString stringWithFormat:@"ps ax | grep \"%@\" | grep WineskinLauncher | awk \"{print \\$1}\"",[[[NSBundle mainBundle] bundlePath] stringByDeletingLastPathComponent]]] componentsSeparatedByString:@"\n"]];
+        for (NSString *pid in pidsToKill)
+        {
+            [self systemCommand:[NSString stringWithFormat:@"kill -9 %@",pid]];
+        }
+    }
+    [alert release];
+    //clear launchd entries that may be stuck
+    NSString *wrapperPath =[[[NSBundle mainBundle] bundlePath] stringByDeletingLastPathComponent];
+    NSString *wrapperName = [[wrapperPath substringFromIndex:[wrapperPath rangeOfString:@"/" options:NSBackwardsSearch].location+1] stringByDeletingPathExtension];
+    NSString *results = [self systemCommand:[NSString stringWithFormat:@"launchctl list | grep \"%@\"",wrapperName]];
+    NSArray *resultArray=[results componentsSeparatedByString:@"\n"];
+    for (NSString *result in resultArray)
+    {
+        NSRange theDash = [result rangeOfString:@"-"];
+        if (theDash.location != NSNotFound)
+        {
+            // clear in front of - in case launchd has it as anonymous, then clear after first [
+            NSString *entryToRemove = [[result substringFromIndex:theDash.location+1] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+            NSRange theBracket = [entryToRemove rangeOfString:@"["];
+            if (theBracket.location != NSNotFound) {
+                entryToRemove = [entryToRemove substringFromIndex:theBracket.location];
+            }
+            NSLog(@"launchctl remove \"%@\"",entryToRemove);
+            [self systemCommand:[NSString stringWithFormat:@"launchctl remove \"%@\"",entryToRemove]];
+        }
+    }
+    //delete lockfile
+    NSString *tmpFolder=[NSString stringWithFormat:@"/tmp/%@",[[[[NSBundle mainBundle] bundlePath] stringByDeletingLastPathComponent] stringByReplacingOccurrencesOfString:@"/" withString:@"xWSx"]];
+    NSString *lockfile=[NSString stringWithFormat:@"%@/lockfile",tmpFolder];
+    [fm removeItemAtPath:lockfile error:nil];
+    [fm removeItemAtPath:tmpFolder error:nil];
+}
+
+- (void)killWine64
+{
     //get name of wine and wineserver
     NSString *wineName = @"wine";
     NSString *wine64Name = @"wine64";
-    NSString *wineStagingName = @"wine-preloader";
-    NSString *wineStaging64Name = @"wine64-preloader";
     NSString *wineserverName = @"wineserver";
     NSArray *filesTEMP1 = [fm subpathsOfDirectoryAtPath:[NSString stringWithFormat:@"%@/Contents/Frameworks/wswine.bundle/bin",[[[NSBundle mainBundle] bundlePath] stringByDeletingLastPathComponent]] error:nil];
     for (NSString *item in filesTEMP1)
@@ -910,6 +995,134 @@ NSFileManager *fm;
         {
             wine64Name = [NSString stringWithFormat:@"%@",item];
         }
+        else if ([item hasSuffix:@"Wineserver"])
+        {
+            wineserverName = [NSString stringWithFormat:@"%@",item];
+        }
+    }
+    //give warning message
+    NSAlert *alert = [[NSAlert alloc] init];
+    [alert addButtonWithTitle:@"Yes"];
+    [alert addButtonWithTitle:@"No"];
+    [alert setMessageText:@"Kill Processes, Are you Sure?"];
+    [alert setInformativeText:[NSString stringWithFormat:@"This will kill the following processes (if running) from this wrapper...\n\nWineskinLauncher\nWineskinX11\n%@\n%@\n%@",wineName,wine64Name,wineserverName]];
+    [alert setAlertStyle:NSInformationalAlertStyle];
+    if ([alert runModal] == NSAlertFirstButtonReturn)
+    {
+        //kill WineskinLauncher WineskinX11 wine wineserver
+        [self systemCommand:[NSString stringWithFormat:@"killall -m %@",wineName]];
+        [self systemCommand:[NSString stringWithFormat:@"killall -m %@",wine64Name]];
+        [self systemCommand:[NSString stringWithFormat:@"killall -m %@",wineserverName]];
+        NSMutableArray *pidsToKill = [[NSMutableArray alloc] initWithCapacity:5];
+        [pidsToKill addObjectsFromArray:[[self systemCommand:[NSString stringWithFormat:@"ps ax | grep \"%@\" | grep WineskinX11 | awk \"{print \\$1}\"",[[[NSBundle mainBundle] bundlePath] stringByDeletingLastPathComponent]]] componentsSeparatedByString:@"\n"]];
+        [pidsToKill addObjectsFromArray:[[self systemCommand:[NSString stringWithFormat:@"ps ax | grep \"%@\" | grep WineskinLauncher | awk \"{print \\$1}\"",[[[NSBundle mainBundle] bundlePath] stringByDeletingLastPathComponent]]] componentsSeparatedByString:@"\n"]];
+        for (NSString *pid in pidsToKill)
+        {
+            [self systemCommand:[NSString stringWithFormat:@"kill -9 %@",pid]];
+        }
+    }
+    [alert release];
+    //clear launchd entries that may be stuck
+    NSString *wrapperPath =[[[NSBundle mainBundle] bundlePath] stringByDeletingLastPathComponent];
+    NSString *wrapperName = [[wrapperPath substringFromIndex:[wrapperPath rangeOfString:@"/" options:NSBackwardsSearch].location+1] stringByDeletingPathExtension];
+    NSString *results = [self systemCommand:[NSString stringWithFormat:@"launchctl list | grep \"%@\"",wrapperName]];
+    NSArray *resultArray=[results componentsSeparatedByString:@"\n"];
+    for (NSString *result in resultArray)
+    {
+        NSRange theDash = [result rangeOfString:@"-"];
+        if (theDash.location != NSNotFound)
+        {
+            // clear in front of - in case launchd has it as anonymous, then clear after first [
+            NSString *entryToRemove = [[result substringFromIndex:theDash.location+1] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+            NSRange theBracket = [entryToRemove rangeOfString:@"["];
+            if (theBracket.location != NSNotFound) {
+                entryToRemove = [entryToRemove substringFromIndex:theBracket.location];
+            }
+            NSLog(@"launchctl remove \"%@\"",entryToRemove);
+            [self systemCommand:[NSString stringWithFormat:@"launchctl remove \"%@\"",entryToRemove]];
+        }
+    }
+    //delete lockfile
+    NSString *tmpFolder=[NSString stringWithFormat:@"/tmp/%@",[[[[NSBundle mainBundle] bundlePath] stringByDeletingLastPathComponent] stringByReplacingOccurrencesOfString:@"/" withString:@"xWSx"]];
+    NSString *lockfile=[NSString stringWithFormat:@"%@/lockfile",tmpFolder];
+    [fm removeItemAtPath:lockfile error:nil];
+    [fm removeItemAtPath:tmpFolder error:nil];
+}
+
+- (void)killWineStaging
+{
+    //get name of wine and wineserver
+    NSString *wineStagingName = @"wine-preloader";
+    NSString *wineserverName = @"wineserver";
+    NSArray *filesTEMP1 = [fm subpathsOfDirectoryAtPath:[NSString stringWithFormat:@"%@/Contents/Frameworks/wswine.bundle/bin",[[[NSBundle mainBundle] bundlePath] stringByDeletingLastPathComponent]] error:nil];
+    for (NSString *item in filesTEMP1)
+    {
+        if ([item hasSuffix:@"Wine-preloader"])
+        {
+            wineStagingName = [NSString stringWithFormat:@"%@",item];
+        }
+        else if ([item hasSuffix:@"Wineserver"])
+        {
+            wineserverName = [NSString stringWithFormat:@"%@",item];
+        }
+    }
+    //give warning message
+    NSAlert *alert = [[NSAlert alloc] init];
+    [alert addButtonWithTitle:@"Yes"];
+    [alert addButtonWithTitle:@"No"];
+    [alert setMessageText:@"Kill Processes, Are you Sure?"];
+    [alert setInformativeText:[NSString stringWithFormat:@"This will kill the following processes (if running) from this wrapper...\n\nWineskinLauncher\nWineskinX11\n%@\n%@",wineStagingName,wineserverName]];
+    [alert setAlertStyle:NSInformationalAlertStyle];
+    if ([alert runModal] == NSAlertFirstButtonReturn)
+    {
+        //kill WineskinLauncher WineskinX11 wine wineserver
+        [self systemCommand:[NSString stringWithFormat:@"killall -m %@",wineStagingName]];
+        [self systemCommand:[NSString stringWithFormat:@"killall -m %@",wineserverName]];
+        NSMutableArray *pidsToKill = [[NSMutableArray alloc] initWithCapacity:5];
+        [pidsToKill addObjectsFromArray:[[self systemCommand:[NSString stringWithFormat:@"ps ax | grep \"%@\" | grep WineskinX11 | awk \"{print \\$1}\"",[[[NSBundle mainBundle] bundlePath] stringByDeletingLastPathComponent]]] componentsSeparatedByString:@"\n"]];
+        [pidsToKill addObjectsFromArray:[[self systemCommand:[NSString stringWithFormat:@"ps ax | grep \"%@\" | grep WineskinLauncher | awk \"{print \\$1}\"",[[[NSBundle mainBundle] bundlePath] stringByDeletingLastPathComponent]]] componentsSeparatedByString:@"\n"]];
+        for (NSString *pid in pidsToKill)
+        {
+            [self systemCommand:[NSString stringWithFormat:@"kill -9 %@",pid]];
+        }
+    }
+    [alert release];
+    //clear launchd entries that may be stuck
+    NSString *wrapperPath =[[[NSBundle mainBundle] bundlePath] stringByDeletingLastPathComponent];
+    NSString *wrapperName = [[wrapperPath substringFromIndex:[wrapperPath rangeOfString:@"/" options:NSBackwardsSearch].location+1] stringByDeletingPathExtension];
+    NSString *results = [self systemCommand:[NSString stringWithFormat:@"launchctl list | grep \"%@\"",wrapperName]];
+    NSArray *resultArray=[results componentsSeparatedByString:@"\n"];
+    for (NSString *result in resultArray)
+    {
+        NSRange theDash = [result rangeOfString:@"-"];
+        if (theDash.location != NSNotFound)
+        {
+            // clear in front of - in case launchd has it as anonymous, then clear after first [
+            NSString *entryToRemove = [[result substringFromIndex:theDash.location+1] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+            NSRange theBracket = [entryToRemove rangeOfString:@"["];
+            if (theBracket.location != NSNotFound) {
+                entryToRemove = [entryToRemove substringFromIndex:theBracket.location];
+            }
+            NSLog(@"launchctl remove \"%@\"",entryToRemove);
+            [self systemCommand:[NSString stringWithFormat:@"launchctl remove \"%@\"",entryToRemove]];
+        }
+    }
+    //delete lockfile
+    NSString *tmpFolder=[NSString stringWithFormat:@"/tmp/%@",[[[[NSBundle mainBundle] bundlePath] stringByDeletingLastPathComponent] stringByReplacingOccurrencesOfString:@"/" withString:@"xWSx"]];
+    NSString *lockfile=[NSString stringWithFormat:@"%@/lockfile",tmpFolder];
+    [fm removeItemAtPath:lockfile error:nil];
+    [fm removeItemAtPath:tmpFolder error:nil];
+}
+
+- (void)killWineStaging64
+{
+    //get name of wine and wineserver
+    NSString *wineStagingName = @"wine-preloader";
+    NSString *wineStaging64Name = @"wine64-preloader";
+    NSString *wineserverName = @"wineserver";
+    NSArray *filesTEMP1 = [fm subpathsOfDirectoryAtPath:[NSString stringWithFormat:@"%@/Contents/Frameworks/wswine.bundle/bin",[[[NSBundle mainBundle] bundlePath] stringByDeletingLastPathComponent]] error:nil];
+    for (NSString *item in filesTEMP1)
+    {
         if ([item hasSuffix:@"Wine-preloader"])
         {
             wineStagingName = [NSString stringWithFormat:@"%@",item];
@@ -923,21 +1136,19 @@ NSFileManager *fm;
             wineserverName = [NSString stringWithFormat:@"%@",item];
         }
     }
-	//give warning message
-	NSAlert *alert = [[NSAlert alloc] init];
-	[alert addButtonWithTitle:@"Yes"];
-	[alert addButtonWithTitle:@"No"];
-	[alert setMessageText:@"Kill Processes, Are you Sure?"];
-	[alert setInformativeText:[NSString stringWithFormat:@"This will kill the following processes (if running) from this wrapper...\n\nWineskinLauncher\nWineskinX11\n%@\n%@",wineName,wineserverName]];
-	[alert setAlertStyle:NSInformationalAlertStyle];
-	if ([alert runModal] == NSAlertFirstButtonReturn)
-	{
-		//kill WineskinLauncher WineskinX11 wine wineserver
-        [self systemCommand:[NSString stringWithFormat:@"killall -9 %@",wineName]];
-        [self systemCommand:[NSString stringWithFormat:@"killall -9 %@",wine64Name]];
-        [self systemCommand:[NSString stringWithFormat:@"killall -9 %@",wineStagingName]];
-        [self systemCommand:[NSString stringWithFormat:@"killall -9 %@",wineStaging64Name]];
-        [self systemCommand:[NSString stringWithFormat:@"killall -9 %@",wineserverName]];
+    //give warning message
+    NSAlert *alert = [[NSAlert alloc] init];
+    [alert addButtonWithTitle:@"Yes"];
+    [alert addButtonWithTitle:@"No"];
+    [alert setMessageText:@"Kill Processes, Are you Sure?"];
+    [alert setInformativeText:[NSString stringWithFormat:@"This will kill the following processes (if running) from this wrapper...\n\nWineskinLauncher\nWineskinX11\n%@\n%@\n%@",wineStagingName,wineStaging64Name,wineserverName]];
+    [alert setAlertStyle:NSInformationalAlertStyle];
+    if ([alert runModal] == NSAlertFirstButtonReturn)
+    {
+        //kill WineskinLauncher WineskinX11 wine wineserver
+        [self systemCommand:[NSString stringWithFormat:@"killall -m %@",wineStagingName]];
+        [self systemCommand:[NSString stringWithFormat:@"killall -m %@",wineStaging64Name]];
+        [self systemCommand:[NSString stringWithFormat:@"killall -m %@",wineserverName]];
         NSMutableArray *pidsToKill = [[NSMutableArray alloc] initWithCapacity:5];
         [pidsToKill addObjectsFromArray:[[self systemCommand:[NSString stringWithFormat:@"ps ax | grep \"%@\" | grep WineskinX11 | awk \"{print \\$1}\"",[[[NSBundle mainBundle] bundlePath] stringByDeletingLastPathComponent]]] componentsSeparatedByString:@"\n"]];
         [pidsToKill addObjectsFromArray:[[self systemCommand:[NSString stringWithFormat:@"ps ax | grep \"%@\" | grep WineskinLauncher | awk \"{print \\$1}\"",[[[NSBundle mainBundle] bundlePath] stringByDeletingLastPathComponent]]] componentsSeparatedByString:@"\n"]];
@@ -946,7 +1157,7 @@ NSFileManager *fm;
             [self systemCommand:[NSString stringWithFormat:@"kill -9 %@",pid]];
         }
     }
-	[alert release];
+    [alert release];
     //clear launchd entries that may be stuck
     NSString *wrapperPath =[[[NSBundle mainBundle] bundlePath] stringByDeletingLastPathComponent];
     NSString *wrapperName = [[wrapperPath substringFromIndex:[wrapperPath rangeOfString:@"/" options:NSBackwardsSearch].location+1] stringByDeletingPathExtension];
