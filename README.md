@@ -7,10 +7,18 @@ Ports are in the form of normal Mac application bundle wrappers.  It works like 
 Source: http://wineskin.urgesoftware.com/
 
 ## Modifications
-As you may have already noticed, this is not the [original Wineskin repository](https://sourceforge.net/p/wineskin/code/ci/master/tree/). This repository includes the "Auto-detect GPU" merge-request from Markus Stoll [Fork Wineskin repository](https://sourceforge.net/u/must21de/wineskin/ci/master/tree/)
+As you may have already noticed, this is not the [original Wineskin repository](https://sourceforge.net/p/wineskin/code/ci/master/tree/). This repository includes the "Auto-detect GPU" merge-request from Markus Stoll [Fork Wineskin repository](https://sourceforge.net/u/must21de/wineskin/ci/master/tree/). Also includes additional fixes to make Wineskin work with Wine64 and Wine-Staging/64 correctly when using the required dylibs without breaking Wine or WineskinX11 functionality.
 
 ## List of modifications
-- *Auto-detect GPU* fix
+- The *Auto-detect GPU* fix was taken from an unapplied upstream merge request.
+- Unique names for wine-preloader wine64/-preloader processes now like wine.
+- *Kill Wineskin Processes* only kills processesfrom current running Wrapper.
+-*Screen Options* Changed heading *Override Setting* to *Overrider Settings Requires X11* to avoid confusion
+- The first *Advanced* tab (*Tools*) should be much more simple:
+    - *Command Line Shell*, renamed to *Command Line (CMD)* to make more sense from a Windows standpoint and moved under *Wine Tools* heading as is not a part of WineSkin's *Utilities* but part of Wine.
+    -Moved *Command Line Wine Test* under *Utilities* this is useful to verifiy wine works on your local system and uses the default .wine prefix in the users HOME folder
+    -Re-ordered some buttons to make more sense
+
 
 ## License
 Keeping the same as the original material, LGPL 2.1 is the license of that project. You can find more details about that in the LICENSE file.
