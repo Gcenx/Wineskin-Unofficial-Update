@@ -1,3 +1,10 @@
+# WARNING - I no longer maintain this!
+I have merged all useful patches from this into Wineskin from VitorMM > [Upstream](https://github.com/vitor251093/wineskin)
+It would be best to use that instead of this, I only uploaded this incase anyone wanted to see the changes I had made.
+If you want to submit a patch make sure it's against [Upstream](https://github.com/vitor251093/wineskin) and not this Repo since it's vastly outdated.
+Also do not pull-request to my [fork](https://github.com/Gcenx/wineskin) as I already have all patches from that also merged into [Upstream](https://github.com/vitor251093/wineskin)
+
+
 # Wineskin
 Wineskin is a tool used to make ports of Windows software to Mac OS X. 
 
